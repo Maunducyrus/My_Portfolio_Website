@@ -1484,3 +1484,15 @@ h2 {
   transform: scale(1.1);
   box-shadow: 0 8px 25px rgba(247, 37, 133, 0.6);
 }
+
+/* Make all portfolio images the same size */
+.portfolio-item img {
+    width: 100%;
+    height: 250px; 
+    object-fit: cover;
+    object-position: center; 
+}
+
+.portfolio-info {
+    flex: 1; 
+}
