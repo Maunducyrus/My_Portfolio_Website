@@ -1,97 +1,77 @@
 (function () {
   "use strict";
 
+  // Initialize popup elements
+  const popup = document.getElementById('formPopup');
+  const popupMessage = document.getElementById('popupMessage');
+  const closePopup = document.querySelector('.close-popup');
+  const overlay = document.createElement('div');
+  overlay.className = 'popup-overlay';
+  document.body.appendChild(overlay);
+
+  // Close popup handler
+  closePopup.addEventListener('click', () => {
+    popup.style.display = 'none';
+    overlay.style.display = 'none';
+  });
+
   let forms = document.querySelectorAll('.php-email-form');
 
   forms.forEach(function(form) {
     form.addEventListener('submit', function(event) {
       event.preventDefault();
-
       let thisForm = this;
-      let loading = thisForm.querySelector('.loading');
-      let errorMessage = thisForm.querySelector('.error-message');
-      let sentMessage = thisForm.querySelector('.sent-message');
 
-      // Null checks for all required elements
-      if (!loading || !errorMessage || !sentMessage) {
-        console.error('Required form elements not found');
-        return;
-      }
+      // Show loading state
+      showPopup('Sending your message...', false, true);
 
       let action = thisForm.getAttribute('action');
-      let recaptcha = thisForm.getAttribute('data-recaptcha-site-key');
-      
-      if (!action) {
-        displayError(thisForm, 'The form action property is not set!');
-        return;
-      }
-
-      loading.classList.add('d-block');
-      errorMessage.classList.remove('d-block');
-      sentMessage.classList.remove('d-block');
-
       let formData = new FormData(thisForm);
 
-      if (recaptcha) {
-        if (typeof grecaptcha !== "undefined") {
-          grecaptcha.ready(function() {
-            try {
-              grecaptcha.execute(recaptcha, {action: 'php_email_form_submit'})
-              .then(token => {
-                formData.set('recaptcha-response', token);
-                php_email_form_submit(thisForm, action, formData);
-              })
-            } catch(error) {
-              displayError(thisForm, error);
-            }
-          });
-        } else {
-          displayError(thisForm, 'The reCaptcha javascript API url is not loaded!');
+      fetch(action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded'
         }
-      } else {
-        php_email_form_submit(thisForm, action, formData);
-      }
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json(); // Parse JSON response
+        }
+        throw new Error('Network response was not ok');
+      })
+      .then(data => {
+        if (data.ok) {
+          showPopup('Your message has been sent successfully! Thank you!');
+          thisForm.reset();
+        } else {
+          throw new Error(data.error || 'Failed to send message');
+        }
+      })
+      .catch((error) => {
+        showPopup('Error: ' + error.message, true);
+      });
     });
   });
 
-  function php_email_form_submit(thisForm, action, formData) {
-    fetch(action, {
-      method: 'POST',
-      body: formData,
-      headers: {'X-Requested-With': 'XMLHttpRequest'}
-    })
-    .then(response => {
-      if (response.ok) {
-        return response.text();
-      } else {
-        throw new Error(`${response.status} ${response.statusText} ${response.url}`); 
-      }
-    })
-    .then(data => {
-      let loading = thisForm.querySelector('.loading');
-      let sentMessage = thisForm.querySelector('.sent-message');
-      
-      if (loading) loading.classList.remove('d-block');
-      if (data.trim() == 'OK') {
-        if (sentMessage) sentMessage.classList.add('d-block');
-        thisForm.reset(); 
-      } else {
-        throw new Error(data ? data : 'Form submission failed and no error message returned from: ' + action); 
-      }
-    })
-    .catch((error) => {
-      displayError(thisForm, error);
-    });
-  }
-
-  function displayError(thisForm, error) {
-    let loading = thisForm.querySelector('.loading');
-    let errorMessage = thisForm.querySelector('.error-message');
+  function showPopup(message, isError = false, isLoading = false) {
+    popupMessage.textContent = message;
+    popup.style.display = 'block';
+    overlay.style.display = 'block';
     
-    if (loading) loading.classList.remove('d-block');
-    if (errorMessage) {
-      errorMessage.innerHTML = typeof error === 'string' ? error : error.message;
-      errorMessage.classList.add('d-block');
+    if (isLoading) {
+      popupMessage.innerHTML = `<div class="spinner"></div> ${message}`;
+      return;
+    }
+
+    // Auto-close after 3 seconds for success, stay open for errors
+    if (!isError) {
+      setTimeout(() => {
+        popup.style.display = 'none';
+        overlay.style.display = 'none';
+      }, 3000);
     }
   }
 })();

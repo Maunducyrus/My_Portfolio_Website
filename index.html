@@ -703,7 +703,11 @@
 
                 <div class="col-md-12 text-center">
                   <button type="submit">Send Message</button>
-                </div>                
+                </div>
+                
+                <div class="loading" style="display:none">Loading</div>
+                <div class="error-message" style="display:none"></div>
+                <div class="sent-message" style="display:none">Your message has been sent. Thank you!</div>
 
               </div>
             </form>
@@ -746,5 +750,14 @@
   <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
   <!-- Main JS File -->
   <script src="assets/js/main.js"></script>
+
+  <!-- pop page -->
+<div id="formPopup" class="form-popup">
+  <div class="popup-content">
+    <span class="close-popup">&times;</span>
+    <p id="popupMessage"></p>
+  </div>
+</div>
+
 </body>
 </html>
